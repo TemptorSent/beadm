@@ -159,7 +159,7 @@ __be_mounted_fstab() {
 
 # check if boot environment is a clone
 __be_clone() { # 1=DATASET
-  if zfs list ${1} 1> /dev/null 2> /dev/null
+  if zfs list "${1}" 1> /dev/null 2> /dev/null
   then
     local ORIGIN="$( zfs list -H -o origin "${1}" )"
     if [ "${ORIGIN}" = "-" ]
@@ -220,7 +220,7 @@ __be_new() { # 1=SOURCE 2=TARGET
   then
     # create boot environment from snapshot
     local SNAPSHOT="$( echo "${1}" | cut -d '@' -f 2 )"
-    zfs list -r -H -t filesystem -o name ${SOURCE} \
+    zfs list -r -H -t filesystem -o name "${SOURCE}" \
       | while read FS
         do
           if ! zfs list -H -o name "${FS}@${SNAPSHOT}" 1> /dev/null 2> /dev/null
@@ -568,7 +568,7 @@ case ${1} in
           __usage
         fi
         __be_exist "${POOL}/${BEDS}/${3}"
-        if zfs list -H -o name ${POOL}/${BEDS}/${4} 1> /dev/null 2> /dev/null
+        if zfs list -H -o name "${POOL}/${BEDS}/${4}" 1> /dev/null 2> /dev/null
         then
           echo "ERROR: Boot environment '${4}' already exists"
           exit 1
@@ -584,7 +584,7 @@ case ${1} in
             exit 1
           fi
         else
-          __be_new "${ROOTFS} ${POOL}/${BEDS}/${2}"
+          __be_new "${ROOTFS}" "${POOL}/${BEDS}/${2}"
         fi
         ;;
       (*)
