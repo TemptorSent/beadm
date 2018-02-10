@@ -29,10 +29,25 @@ unset LC_ALL
 unset LANG
 PATH=${PATH}:/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin
 
-if [ $( uname -r | cut -d '-' -f1 | cut -d '.' -f1 ) -lt 8 ]
+# Detect OS compatability
+OSNAME="$(uname -s)"
+
+if [ "$OSNAME" = "Linux" ]
 then
-  echo "ERROR: beadm works on FreeBSD 8.0 or later"
-  exit 1
+  ZFSMODVER="$(modinfo -F version zfs | sed -r -e 's/([0-9.])+.*/\1/')"
+  if ! ( lsmod | grep -q "^zfs[[:space:]]" ) || [ ${ZFSMODVER//./} -le 064 ]
+  then
+    echo "ERROR: beadm on Linux requires loaded zfs modules version 0.6.5 or greater."
+	exit 1
+  fi
+elif [ "$OSNAME" = "FreeBSD" ]
+then
+  if [ $( uname -r | cut -d '-' -f1 | cut -d '.' -f1 ) -lt 8 ]
+  then
+    echo "ERROR: beadm works on FreeBSD 8.0 or later"
+    exit 1
+  fi
+else
 fi
 
 if [ "${1}" = "--version" -o "${1}" = "version" ]
