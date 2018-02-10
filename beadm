@@ -52,7 +52,9 @@ then
     echo "ERROR: beadm on Linux requires loaded zfs modules version 0.6.5 or greater."
     exit 1
   fi
+
   MKTEMPOPTS="-p /mnt"
+
   if [ -d /var/lib/urandom ]
   then
     ENTSEED=/var/lib/urandom/random-seed
@@ -60,6 +62,7 @@ then
   then
     ENTSEED=/var/lib/misc/random-seed
   fi
+
 # FreeBSD
 elif [ "$OSNAME" = "FreeBSD" ]
 then
@@ -69,6 +72,7 @@ then
     exit 1
   fi
   ENTSEED=/boot/entropy
+
 # Unknown
 else
   echo "ERROR: beadm is not known to work on your OS!"
@@ -196,19 +200,19 @@ __be_new() { # 1=SOURCE 2=TARGET
   local SOURCE="$( echo "${1}" | cut -d '@' -f 1 )"
   local ENTROPY=0
   # secure current entropy seed file
-  if [ -f "${ENTFILE}" ]
+  if [ -f "${ENTSEED}" ]
   then
-    if ! cp -p "${ENTFILE}" "${ENTFILE}".OLD 1> /dev/null 2> /dev/null
+    if ! cp -p "${ENTSEED}" "${ENTSEED}".OLD 1> /dev/null 2> /dev/null
     then
-      echo "ERROR: Can not copy current '${ENTFILE}' file"
+      echo "ERROR: Can not copy current '${ENTSEED}' file"
       exit 1
     fi
     ENTROPY=1
   fi
   # create new entropy seed file that would be used in new boot environment
-  if ! dd if=/dev/random of="${ENTFILE}" bs=4096 count=1 1> /dev/null 2> /dev/null
+  if ! dd if=/dev/random of="${ENTSEED}" bs=4096 count=1 1> /dev/null 2> /dev/null
   then
-    echo "ERROR: Can not generate new '${ENTFILE}' file"
+    echo "ERROR: Can not generate new '${ENTSEED}' file"
     exit 1
   fi
   # create snapshot that will be used as a base for new boot environment
@@ -224,9 +228,9 @@ __be_new() { # 1=SOURCE 2=TARGET
             echo "ERROR: Child snapshot '${FS}@${SNAPSHOT}' does not exist"
             if [ ${ENTROPY} -ne 0 ]
             then
-              if ! mv "${ENTFILE}".OLD "${ENTFILE}" 1> /dev/null 2> /dev/null
+              if ! mv "${ENTSEED}".OLD "${ENTSEED}" 1> /dev/null 2> /dev/null
               then
-                echo "WARNING: Can not bring back original '${ENTFILE}' file"
+                echo "WARNING: Can not bring back original '${ENTSEED}' file"
               fi
             fi
             exit 1
@@ -239,9 +243,9 @@ __be_new() { # 1=SOURCE 2=TARGET
       echo "ERROR: Snapshot '${1}@${2##*/}' already exists"
       if [ ${ENTROPY} -ne 0 ]
       then
-        if ! mv "${ENTFILE}".OLD "${ENTFILE}"  1> /dev/null 2> /dev/null
+        if ! mv "${ENTSEED}".OLD "${ENTSEED}"  1> /dev/null 2> /dev/null
         then
-          echo "WARNING: Can not bring back original '${ENTFILE}' file"
+          echo "WARNING: Can not bring back original '${ENTSEED}' file"
         fi
       fi
       exit 1
@@ -253,7 +257,7 @@ __be_new() { # 1=SOURCE 2=TARGET
       echo "ERROR: Cannot create snapshot '${1}@${FMT}'"
       if [ ${ENTROPY} -ne 0 ]
       then
-        if ! mv "${ENTFILE}".OLD "${ENTFILE}" 1> /dev/null 2> /dev/null
+        if ! mv "${ENTSEED}".OLD "${ENTSEED}" 1> /dev/null 2> /dev/null
         then
           echo "WARNING: Can not bring back original '/boot/entropy' file"
         fi
@@ -262,11 +266,11 @@ __be_new() { # 1=SOURCE 2=TARGET
     fi
   fi
   # bring back secured .OLD entropy seed file
-  if [ -f"${ENTFILE}" .OLD ]
+  if [ -f"${ENTSEED}" .OLD ]
   then
-    if ! mv "${ENTFILE}".OLD "${ENTFILE}" 1> /dev/null 2> /dev/null
+    if ! mv "${ENTSEED}".OLD "${ENTSEED}" 1> /dev/null 2> /dev/null
     then
-      echo "WARNING: Can not bring back original '${ENTFILE}' file"
+      echo "WARNING: Can not bring back original '${ENTSEED}' file"
     fi
   fi
   unset ENTROPY
