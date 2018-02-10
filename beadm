@@ -29,6 +29,9 @@ unset LC_ALL
 unset LANG
 PATH=${PATH}:/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin
 
+# Detect 'findmnt' tool if present.
+FINDMNT="$(which findmnt 2> /dev/null)"
+
 # Detect OS compatability
 OSNAME="$(uname -s)"
 
@@ -99,7 +102,22 @@ __be_snapshot() { # 1=DATASET/SNAPSHOT
 
 # check if boot environment is mounted
 __be_mounted() { # 1=BE
-  mount 2> /dev/null | grep -q -E "^${1} " 2> /dev/null
+  if [ ! -z "$FINDMNT" ]
+  then
+    findmnt --first-only --source "${1}" > /dev/null
+  else
+    mount 2> /dev/null | grep -q -E "^${1} " 2> /dev/null
+  fi
+}
+
+# find mount point of boot environment
+__be_findmnt() { # 1=BE
+  if [ ! -z "$FINDMNT" ]
+  then
+    echo declare $(findmnt -fPS "${1}")\; echo \$TARGET | sh
+  else
+    mount 2> /dev/null | grep -m 1 -E "^${1} " 2> /dev/null | cut -d' ' -f3
+  fi
 }
 
 # check if boot environment is a clone
@@ -540,7 +558,7 @@ case ${1} in
     else
       if __be_mounted ${POOL}/${BEDS}/${2}
       then
-        MNT=$( mount | grep -E "^${POOL}/${BEDS}/${2} " | awk '{print $3}' )
+        MNT=$( __be_findmnt "${POOL}/${BEDS}/${2}" )
         if [ "${MNT}" != "/" ]
         then
           # boot environment is not current root and its mounted
@@ -813,7 +831,7 @@ EOF
     __be_exist "${POOL}/${BEDS}/${2}"
     if __be_mounted "${POOL}/${BEDS}/${2}"
     then
-      MNT=$( mount | grep -E "^${POOL}/${BEDS}/${2} " | awk '{print $3}' )
+      MNT=$( __be_findmnt "${POOL}/${BEDS}/${2}" )
       echo "Boot environment '${2}' is already mounted at '${MNT}'"
       exit 1
     fi
