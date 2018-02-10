@@ -57,6 +57,7 @@ then
   then
     ENTSEED=/var/lib/urandom/random-seed
   elif [ -d /var/lib/misc ]
+  then
     ENTSEED=/var/lib/misc/random-seed
   fi
 # FreeBSD
