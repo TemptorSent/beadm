@@ -266,7 +266,7 @@ __be_new() { # 1=SOURCE 2=TARGET
     fi
   fi
   # bring back secured .OLD entropy seed file
-  if [ -f "${ENTSEED}" .OLD ]
+  if [ -f "${ENTSEED}".OLD ]
   then
     if ! mv "${ENTSEED}".OLD "${ENTSEED}" 1> /dev/null 2> /dev/null
     then
