@@ -4,6 +4,8 @@
 # Copyright (c) 2012-2013 Bryan Drewery (bdrewery)
 # Copyright (c) 2012-2013 Mike Clarke (rawthey)
 # Copyright (c) 2013      Dancho Penev (dpslavov)
+# Copyright (c) 2014-2016 Andrew Barnes (b333z)
+# Copyright (c) 2018      Chris A. Giorgi (TemptorSent)
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -289,9 +291,10 @@ __be_new() { # 1=SOURCE 2=TARGET
             local OPTS="-o ${PROPERTY}=${VALUE} ${OPTS}"
           fi
         done << EOF
-"$( zfs get -o name,property,value -s local,received -H all "${FS}" | awk '!/[\t ]canmount[\t ]/' )"
+$( zfs get -o name,property,value -s local,received -H all "${FS}" | awk '!/[\t ]canmount[\t ]/' )
 EOF
         DATASET="$( echo "${FS}" | awk '{print $1}' | sed -E s/"^${POOL}\/${BEDS}\/${SOURCE##*/}"/"${POOL}\/${BEDS}\/${2##*/}"/g )"
+		echo "NOTE: DATASET='$DATASET' OPTS='$OPTS' FS='$FS' FMT='$FMT'"
         if [ "${OPTS}" = "-o = " ]
         then
           local OPTS=""
