@@ -29,6 +29,13 @@ unset LC_ALL
 unset LANG
 PATH=${PATH}:/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin
 
+# Detect root
+if false && [ $(id -u) -ne 0 ]
+then
+  echo "ERROR: beadm requires root permissions to work!"
+  exit 1
+fi
+
 # Detect 'findmnt' tool if present.
 FINDMNT="$(which findmnt 2> /dev/null)"
 
@@ -38,9 +45,10 @@ OSNAME="$(uname -s)"
 # Linux
 if [ "$OSNAME" = "Linux" ]
 then
-  ZFSMODVER="$(modinfo -F version zfs | sed -r -e 's/([0-9.])+.*/\1/')"
+  ZFSMODVER="$(modinfo -F version zfs | sed -r -e 's/([0-9.]+).*/\1/')"
   if ! ( lsmod | grep -q "^zfs[[:space:]]" ) || [ ${ZFSMODVER//./} -le 064 ]
   then
+    echo "ZFS Modules Version: $ZFSMODVER"
     echo "ERROR: beadm on Linux requires loaded zfs modules version 0.6.5 or greater."
     exit 1
    fi
@@ -633,17 +641,21 @@ EOF
         if [ -f "${TMPMNT}"/etc/rc.d/zfsbe ]; then
           HAVE_ZFSBE=1
         fi
+
         if [ -f /boot/zfs/zpool.cache ]
         then
           cp /boot/zfs/zpool.cache "${TMPMNT}"/boot/zfs/zpool.cache
         else
           rm -f "${TMPMNT}"/boot/zfs/zpool.cache
-        elif [ -f /etc/zfs/zpool.cache ]
+        fi
+
+        if [ -f /etc/zfs/zpool.cache ]
         then
           cp /etc/zfs/zpool.cache "${TMPMNT}"/etc/zfs/zpool.cache
         else
           rm -f "${TMPMNT}"/etc/zfs/zpool.cache
         fi
+
         LOADER_CONFIGS="${TMPMNT}"/boot/loader.conf
         if [ -f "${TMPMNT}"/boot/loader.conf.local ]
         then
