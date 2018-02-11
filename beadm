@@ -882,7 +882,7 @@ EOF
   (mount) # ------------------------------------------------------------
     if [ ${#} -eq 2 ]
     then
-      TARGET="$( mktemp ${MKTEMPOPTS} -d -t BE-${2} )"
+      TARGET="$( mktemp ${MKTEMPOPTS} -d -t BE-${2}XXX )"
     elif [ ${#} -eq 3 ]
     then
       TARGET="${3}"
@@ -1109,10 +1109,19 @@ EOF
       | sort -n -r \
       | while read FS
         do
-          if ! umount "${OPTS}" "${FS}" 1> /dev/null 2> /dev/null
+          if [ "$OSNAME" = "Linux" ]
           then
-            echo "ERROR: Cannot umount '${FS}' dataset"
-            exit 1
+            if ! zfs unmount ${OPTS} "${FS}"
+            then
+              echo "ERROR: Could not unmount '${FS}' dataset."
+              exit 1
+            fi
+          else
+            if ! umount ${OPTS} "${FS}" 1> /dev/null 2> /dev/null
+            then
+              echo "ERROR: Cannot umount '${FS}' dataset"
+              exit 1
+            fi
           fi
         done
     # Detect Linux where the system mount refuses to manually mount a
