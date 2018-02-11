@@ -912,7 +912,7 @@ EOF
       | grep -E "^${POOL}/${BEDS}/${2}/" \
       | while read FS MOUNTPOINT
         do
-          if [ "{FS}" != "${POOL}/${BEDS}/${2}" ]
+          if [ "${FS}" != "${POOL}/${BEDS}/${2}" ]
           then
             INHERIT="$( zfs get -H -o source mountpoint "${FS}" )"
             if [ "${INHERIT}" = "local" ]
