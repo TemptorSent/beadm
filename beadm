@@ -901,10 +901,26 @@ EOF
       echo "ERROR: Cannot create '${TARGET}' mountpoint"
       exit 1
     fi
-    if ! mount -t zfs "${POOL}/${BEDS}/${2}" "${TARGET}"
+    # Detect Linux where the system mount refuses to manually mount a
+    # zfs dataset to a specified mountpoint unless mountpoint=legacy.
+    if [ "$OSNAME" = "Linux" ]
     then
-      echo "ERROR: Cannot mount '${2}' at '${TARGET}' mountpoint"
-      exit 1
+      if ! zfs set mountpoint="${TARGET}"  canmount=noauto "${POOL}/${BEDS}/${2}"
+      then
+        echo "ERROR: Could not set mountpoint=legacy canmount=noauto for dataset ${POOL}/${BEDS}/${2}."
+        exit 1
+      fi
+      if ! zfs mount "${POOL}/${BEDS}/${2}"
+      then
+        echo "ERROR: Could mount dataset ${POOL}/${BEDS}/${2} to ${TARGET}."
+        exit 1
+      fi
+    else
+      if ! mount -t zfs "${POOL}/${BEDS}/${2}" "${TARGET}"
+      then
+        echo "ERROR: Cannot mount '${2}' at '${TARGET}' mountpoint"
+        exit 1
+      fi
     fi
     zfs list -H -o name,mountpoint -r "${POOL}/${BEDS}/${2}" \
       | grep -v -E "[[:space:]](legacy|none)$" \
@@ -1099,6 +1115,17 @@ EOF
             exit 1
           fi
         done
+    # Detect Linux where the system mount refuses to manually mount a
+    # zfs dataset to a specified mountpoint unless mountpoint=legacy
+    # and reset the root mountpoint back to /
+    if [ "$OSNAME" = "Linux" ]
+    then
+      if ! zfs set mountpoint=/ canmount=noauto "${POOL}/${BEDS}/${2}"
+      then
+        echo "ERROR: Could not set mountpoint=/ canmount=noauto for dataset ${POOL}/${BEDS}/${2}."
+        exit 1
+      fi
+    fi
     echo "Unmounted successfully"
     # only delete the temporary mountpoint directory
     if echo "${MOUNTPOINT}" | grep -q -E "/BE-${2}\.[a-zA-Z0-9]{8}" 1> /dev/null 2> /dev/null
