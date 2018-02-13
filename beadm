@@ -672,11 +672,14 @@ EOF
         fi
 
         LOADER_CONFIGS="${TMPMNT}"/boot/loader.conf
-        if [ -f "${TMPMNT}"/boot/loader.conf.local ]
+        if [ -f "${LOADER_CONFIGS}" ]
         then
-          LOADER_CONFIGS="${LOADER_CONFIGS} ${TMPMNT}/boot/loader.conf.local"
+          if [ -f "${TMPMNT}"/boot/loader.conf.local ]
+          then
+            LOADER_CONFIGS="${LOADER_CONFIGS} ${TMPMNT}/boot/loader.conf.local"
+          fi
+          sed -i '' -E s/"^vfs.root.mountfrom=.*$"/"vfs.root.mountfrom=\"zfs:${POOL}\/${BEDS}\/${2##*/}\""/g ${LOADER_CONFIGS}
         fi
-        sed -i '' -E s/"^vfs.root.mountfrom=.*$"/"vfs.root.mountfrom=\"zfs:${POOL}\/${BEDS}\/${2##*/}\""/g ${LOADER_CONFIGS}
         if [ ${MOUNT} -eq 0 ]
         then
           zfs umount "${POOL}/${BEDS}/${2}"
