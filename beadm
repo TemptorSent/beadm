@@ -628,7 +628,7 @@ case ${1} in
       HAVE_ZFSBE=0
       if [ "${ROOTFS}" != "${POOL}/${BEDS}/${2}" ]
       then
-        TMPMNT="$( mktemp -d ${MKTEMPOPTS} -t "BE-${2}" )"
+        TMPMNT="$( mktemp -d ${MKTEMPOPTS} -t "BE-${2}.XXX" )"
         if ! mkdir -p "${TMPMNT}" 2> /dev/null
         then
           echo "ERROR: Cannot create '${TMPMNT}' directory"
