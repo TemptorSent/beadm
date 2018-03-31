@@ -432,6 +432,7 @@ case ${1} in
             MOUNTS[$1] = $3
         close(CMD_MOUNT)
         FS = "\\t"
+        split("",FSNAMES)
         CMD_ZFS_LIST = "zfs list -H -t filesystem,snapshot,volume -s creation -o name,used,usedds,usedbysnapshots,usedrefreserv,refer,creation,origin -r "
         while(CMD_ZFS_LIST BENAME_BEGINS_WITH | getline) {
           if($1 != BENAME_BEGINS_WITH) {
