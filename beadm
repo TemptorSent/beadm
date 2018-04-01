@@ -92,12 +92,15 @@ __usage() {
   local NAME="${0##*/}"
   echo "usage:"
   echo "  ${NAME} activate <beName>"
+  echo "  ${NAME} bind <beName>"
+  echo "  ${NAME} chroot <beName>"
   echo "  ${NAME} create [-e nonActiveBe | -e beName@snapshot] <beName>"
   echo "  ${NAME} create <beName@snapshot>"
   echo "  ${NAME} destroy [-F] <beName | beName@snapshot>"
   echo "  ${NAME} list [-a] [-s] [-D] [-H]"
   echo "  ${NAME} rename <origBeName> <newBeName>"
   echo "  ${NAME} mount <beName> [mountpoint]"
+  echo "  ${NAME} unbind <beName>"
   echo "  ${NAME} { umount | unmount } [-f] <beName>"
   exit 1
 }
@@ -967,13 +970,14 @@ EOF
     ;;
 
   (bind) # -------------------------------------------------------------
+    if [ "${OSNAME}" != "Linux" ]
+    then
+      echo "ERROR: bind mounting implementation is Linux specific"
+      exit 1
+    fi
     if [ ${#} -gt 1 ]
     then
       TARGET="${2}"
-    elif [ "${OSNAME}" != "Linux" ]
-    then
-      echo "ERROR: bind mounting is Linux specific"
-      exit 1
     else
       __usage
     fi
@@ -1017,13 +1021,14 @@ EOF
     ;;
 
   (chroot) # -------------------------------------------------------------------
+    if [ "${OSNAME}" != "Linux" ]
+      then
+      echo "ERROR: chroot implementation is Linux specific"
+      exit 1
+    fi
     if [ ${#} -eq 2 ]
     then
       TARGET="${2}"
-    elif [ "${OSNAME}" != "Linux" ]
-      then
-      echo "ERROR: bind mounting is Linux specific"
-      exit 1
     else
       __usage
     fi
@@ -1047,6 +1052,10 @@ EOF
       renice -n 20 -p $$ | sed 's/^/    /'
       /usr/bin/chroot "${MNT}" "${SHELL:-/bin/bash}" --rcfile "${TMPRC}"
       rm "${TMPRC}"
+    elif ! [ -e "${MNT}/proc/self" ]
+      then
+        echo "ERROR: '${TARGET}' not bound"
+		exit 1
     else
       echo "ERROR: '${TARGET}' is not mounted"
       exit 1
@@ -1054,13 +1063,14 @@ EOF
     ;;
 
   (ubind|unbind) # -------------------------------------------------------------
+    if [ "${OSNAME}" != "Linux" ]
+    then
+      echo "ERROR: bind mounting implementation is Linux specific"
+      exit 1
+    fi
     if [ ${#} -gt 1 ]
     then
       TARGET="${2}"
-    elif [ "${OSNAME}" != "Linux" ]
-    then
-      echo "ERROR: bind mounting is Linux specific"
-      exit 1
     else
       __usage
     fi

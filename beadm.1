@@ -26,6 +26,12 @@
 activate
 .Ao Ar beName Ac
 .Nm
+bind
+.Ao Ar beName Ac (Linux only)
+.Nm
+chroot
+.Ao Ar beName Ac (Linux only)
+.Nm
 create
 .Op Fl e Ar nonActiveBe | Fl e Ar beName@snapshot
 .Ao Ar beName Ac
@@ -51,6 +57,9 @@ rename
 .Ao Ar origBeName Ac
 .Ao Ar newBeName Ac
 .Nm
+unbind
+.Ao Ar beName Ac (Linux only)
+.Nm
 { umount | unmount }
 .Op Fl f
 .Ao Ar beName Ac
@@ -71,6 +80,17 @@ The following commands are supported by
 Activate the given
 .Ar beName
 for the next boot.
+.Pp
+.It Ic bind Ar <beName>
+.Pp
+Binds system mountpoints (/proc,/sys,/dev) into mounted root for given
+.Ar beName .
+.Pp
+.It Ic chroot Ar <beName>
+.Pp
+Chroot into the given
+.Ar beName
+(must be mounted and bound)
 .Pp
 .It Ic create
 .Op Fl e Ar nonActiveBe | Fl e Ar beName@snapshot
@@ -139,6 +159,11 @@ Renames the given nonactive
 .Ar origBeName
 to the given
 .Ar newBeName
+.Pp
+.It Ic unbind Ar <beName>
+.Pp
+Unbind system mountpoints (/proc,/sys,/dev) into mounted root for given
+.Ar beName .
 .Pp
 .It Ic umount
 .Op Fl f
