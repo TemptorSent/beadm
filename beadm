@@ -38,8 +38,8 @@ then
   exit 1
 fi
 
-# Detect 'findmnt' tool if present.
-FINDMNT="$(which findmnt 2> /dev/null)"
+# Detect 'findmnt' tool if present, fail gracefully if not.
+FINDMNT="$(which findmnt 2> /dev/null || true)"
 
 # Detect OS compatability
 OSNAME="$(uname -s)"
