@@ -30,6 +30,7 @@ set -e
 unset LC_ALL
 unset LANG
 PATH=${PATH}:/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin
+shell=/bin/bash
 
 # Detect root
 if false && [ $(id -u) -ne 0 ]
@@ -146,7 +147,7 @@ __be_mounted() { # 1=BE
 __be_findmnt() { # 1=BE
   if [ ! -z "$FINDMNT" ]
   then
-    echo declare "$(findmnt -fPS "${1}")"\; echo \$TARGET | sh
+    echo declare "$(findmnt -fPS "${1}")"\; echo \$TARGET | ${shell}
   else
     mount 2> /dev/null | grep -m 1 -E "^${1} " 2> /dev/null | cut -d' ' -f3
   fi
