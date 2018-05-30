@@ -1,5 +1,5 @@
-#!/bin/bash -e
-
+#!/usr/bin/env bash
+set -e
 # Copyright (c) 2012-2015 Slawomir Wojciech Wojtczak (vermaden)
 # Copyright (c) 2012-2013 Bryan Drewery (bdrewery)
 # Copyright (c) 2012-2013 Mike Clarke (rawthey)
@@ -917,9 +917,14 @@ EOF
     # zfs dataset to a specified mountpoint unless mountpoint=legacy.
     if [ "$OSNAME" = "Linux" ]
     then
-      if ! zfs set mountpoint="${TARGET}"  canmount=noauto "${POOL}/${BEDS}/${2}"
+      if ! zfs set mountpoint="${TARGET}" "${POOL}/${BEDS}/${2}" 
       then
-        echo "ERROR: Could not set mountpoint=legacy canmount=noauto for dataset ${POOL}/${BEDS}/${2}."
+        echo "ERROR: Could not set mountpoint=${TARGET} for dataset ${POOL}/${BEDS}/${2}."
+        exit 1
+      fi
+      if ! zfs set canmount=noauto "${POOL}/${BEDS}/${2}" 
+      then
+        echo "ERROR: Could not set canmount=noauto for dataset ${POOL}/${BEDS}/${2}."
         exit 1
       fi
       if ! zfs mount "${POOL}/${BEDS}/${2}"
@@ -1148,9 +1153,14 @@ EOF
     # and reset the root mountpoint back to /
     if [ "$OSNAME" = "Linux" ]
     then
-      if ! zfs set mountpoint=/ canmount=noauto "${POOL}/${BEDS}/${2}"
+      if ! zfs set mountpoint=/ "${POOL}/${BEDS}/${2}"
       then
-        echo "ERROR: Could not set mountpoint=/ canmount=noauto for dataset ${POOL}/${BEDS}/${2}."
+        echo "ERROR: Could not set mountpoint=/ for dataset ${POOL}/${BEDS}/${2}."
+        exit 1
+      fi
+      if ! zfs set canmount=noauto "${POOL}/${BEDS}/${2}" 
+      then
+        echo "ERROR: Could not set canmount=noauto for dataset ${POOL}/${BEDS}/${2}."
         exit 1
       fi
     fi
