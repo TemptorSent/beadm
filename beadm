@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 set -e
 # Copyright (c) 2012-2015 Slawomir Wojciech Wojtczak (vermaden)
 # Copyright (c) 2012-2013 Bryan Drewery (bdrewery)
@@ -49,7 +49,7 @@ OSNAME="$(uname -s)"
 if [ "$OSNAME" = "Linux" ]
 then
   ZFSMODVER="$(modinfo -F version zfs | sed -r -e 's/([0-9.]+).*/\1/')"
-  if ! ( lsmod | grep -q "^zfs[[:space:]]" ) || [ ${ZFSMODVER//./} -le 064 ]
+  if ! ( lsmod | grep -q "^zfs[[:space:]]" ) || [ $(echo ${ZFSMODVER} | sed 's/\.//g') -le 064 ]
   then
     echo "ZFS Modules Version: $ZFSMODVER"
     echo "ERROR: beadm on Linux requires loaded zfs modules version 0.6.5 or greater."
