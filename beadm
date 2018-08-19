@@ -291,11 +291,8 @@ __be_new() { # 1=SOURCE 2=TARGET
 	  case "${PROPERTY}" in
           "sharenfs")
             local OPTS="-o ${PROPERTY}=\"${VALUE}\" ${OPTS}";;
-          "canmount")
-	    if [ "${VALUE}" != "off" ]
-	    then
-              local OPTS="-o ${PROPERTY}=\"${VALUE}\" ${OPTS}"
-            fi;;
+          "mountpoint")
+            local OPTS="-o ${PROPERTY}=none ${OPTS}";;
           *)
             local OPTS="-o ${PROPERTY}=${VALUE} ${OPTS}";;
 	  esac
@@ -951,7 +948,7 @@ EOF
 	fi
       fi
     else
-      if ! mount -t zfs "${POOL}/${BEDS}/${2}" "${TARGET}"
+      if ! zfs mount "${POOL}/${BEDS}/${2}" 
       then
         echo "ERROR: Cannot mount '${2}' at '${TARGET}' mountpoint"
         exit 1
@@ -983,7 +980,7 @@ EOF
             echo "ERROR: Cannot create '${TARGET}${MOUNTPOINT}' mountpoint"
             exit 1
           fi
-          if ! mount -t zfs "${FS}" "${TARGET}${MOUNTPOINT}" 1> /dev/null 2> /dev/null
+          if ! zfs mount "${FS}" 1> /dev/null 2> /dev/null
           then
             echo "ERROR: Cannot mount '${FS}' at '${TARGET}${MOUNTPOINT}' mountpoint"
             exit 1
