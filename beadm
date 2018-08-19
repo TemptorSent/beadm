@@ -1070,7 +1070,7 @@ EOF
 EOF
       ionice -c3 -p $$ | sed 's/^/    /'
       renice -n 20 -p $$ | sed 's/^/    /'
-      /usr/bin/chroot "${MNT}" "${SHELL:-/bin/bash}" --rcfile "${TMPRC}"
+      chroot "${MNT}" "${SHELL:-/bin/bash}" --rcfile "${TMPRC}"
       rm "${TMPRC}"
     elif ! [ -e "${MNT}/proc/self" ]
       then
