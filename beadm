@@ -654,7 +654,6 @@ $( __be_mounted_fstab )
 EOF
         if [ ${MOUNT} -eq 0 ]
         then
-#TODO
           zfs set canmount=noauto "${POOL}/${BEDS}/${2}"
           zfs set mountpoint="${TMPMNT}" "${POOL}/${BEDS}/${2}"
           zfs mount "${POOL}/${BEDS}/${2}"
@@ -1170,16 +1169,16 @@ EOF
     then
       if [ $(zfs list -H -o canmount "${POOL}/${BEDS}/${2}" ) != "off" ]
       then
-	if ! zfs set mountpoint=/ "${POOL}/${BEDS}/${2}"
-	then
-	  echo "ERROR: Could not set mountpoint=/ for dataset ${POOL}/${BEDS}/${2}."
-	  exit 1
-	fi
 	if ! zfs set canmount=noauto "${POOL}/${BEDS}/${2}" 
 	then
 	  echo "ERROR: Could not set canmount=noauto for dataset ${POOL}/${BEDS}/${2}."
 	  exit 1
 	fi
+      fi
+      if ! zfs set mountpoint=/ "${POOL}/${BEDS}/${2}"
+      then
+	echo "ERROR: Could not set mountpoint=/ for dataset ${POOL}/${BEDS}/${2}."
+	exit 1
       fi
     fi
     echo "Unmounted successfully"
