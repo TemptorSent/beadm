@@ -1,5 +1,5 @@
-#!/bin/sh -e
-
+#!/bin/sh
+set -e
 # Copyright (c) 2012-2015 Slawomir Wojciech Wojtczak (vermaden)
 # Copyright (c) 2012-2013 Bryan Drewery (bdrewery)
 # Copyright (c) 2012-2013 Mike Clarke (rawthey)
@@ -30,6 +30,7 @@
 unset LC_ALL
 unset LANG
 PATH=${PATH}:/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin
+shell=$0
 
 # Detect root
 if false && [ $(id -u) -ne 0 ]
@@ -48,7 +49,7 @@ OSNAME="$(uname -s)"
 if [ "$OSNAME" = "Linux" ]
 then
   ZFSMODVER="$(modinfo -F version zfs | sed -r -e 's/([0-9.]+).*/\1/')"
-  if ! ( lsmod | grep -q "^zfs[[:space:]]" ) || [ ${ZFSMODVER//./} -le 064 ]
+  if ! ( lsmod | grep -q "^zfs[[:space:]]" ) || [ $(echo ${ZFSMODVER} | sed 's/\.//g') -le 064 ]
   then
     echo "ZFS Modules Version: $ZFSMODVER"
     echo "ERROR: beadm on Linux requires loaded zfs modules version 0.6.5 or greater."
@@ -146,7 +147,7 @@ __be_mounted() { # 1=BE
 __be_findmnt() { # 1=BE
   if [ ! -z "$FINDMNT" ]
   then
-    echo declare "$(findmnt -fPS "${1}")"\; echo \$TARGET | sh
+    echo declare "$(findmnt -fPS "${1}")"\; echo \$TARGET | ${shell}
   else
     mount 2> /dev/null | grep -m 1 -E "^${1} " 2> /dev/null | cut -d' ' -f3
   fi
@@ -287,14 +288,16 @@ __be_new() { # 1=SOURCE 2=TARGET
         local OPTS=""
         while read NAME PROPERTY VALUE
         do
-          if [ "${PROPERTY}" = "sharenfs" ]
-          then
-            local OPTS="-o ${PROPERTY}=\"${VALUE}\" ${OPTS}"
-          else
-            local OPTS="-o ${PROPERTY}=${VALUE} ${OPTS}"
-          fi
+	  case "${PROPERTY}" in
+          "sharenfs")
+            local OPTS="-o ${PROPERTY}=\"${VALUE}\" ${OPTS}";;
+          "mountpoint")
+            local OPTS="-o ${PROPERTY}=none ${OPTS}";;
+          *)
+            local OPTS="-o ${PROPERTY}=${VALUE} ${OPTS}";;
+	  esac
         done << EOF
-$( zfs get -o name,property,value -s local,received -H all "${FS}" | awk '!/[\t ]canmount[\t ]/' )
+$( zfs get -o name,property,value -s local,received -H all "${FS}" )
 EOF
         DATASET="$( echo "${FS}" | awk '{print $1}' | sed -E s/"^${POOL}\/${BEDS}\/${SOURCE##*/}"/"${POOL}\/${BEDS}\/${2##*/}"/g )"
 		echo "NOTE: DATASET='$DATASET' OPTS='$OPTS' FS='$FS' FMT='$FMT'"
@@ -304,9 +307,9 @@ EOF
         fi
         if __be_snapshot "${1}"
         then
-          eval "zfs clone -o canmount=off ${OPTS} \"${FS}@${1##*@}\" \"${DATASET}\""
+          eval "zfs clone ${OPTS} \"${FS}@${1##*@}\" \"${DATASET}\""
         else
-          eval "zfs clone -o canmount=off ${OPTS} \"${FS}@${FMT}\" \"${DATASET}\""
+          eval "zfs clone ${OPTS} \"${FS}@${FMT}\" \"${DATASET}\""
         fi
       done
       # check if we need to update grub
@@ -705,7 +708,11 @@ EOF
       | grep -v "^${POOL}/${BEDS}/${2}/" \
       | while read NAME
         do
-          zfs set canmount=noauto "${NAME}"
+	  if [ $(zfs list -H -o canmount "${NAME}") != "off" ]
+	  then
+	    # preserve canmount=off
+            zfs set canmount=noauto "${NAME}"
+          fi
         done
     # enable automatic mount for active boot environment and promote it
     if [ ${HAVE_ZFSBE} -eq 1 ]; then
@@ -717,7 +724,11 @@ EOF
       | grep -E "^${POOL}/${BEDS}/${2}(/|$)" \
       | while read NAME
         do
-          zfs set canmount=${ZFSBE_CANMOUNT} "${NAME}"
+	  if [ $(zfs list -H -o canmount "${NAME}") != "off" ]
+	  then
+	    # preserve canmount=off
+            zfs set canmount=${ZFSBE_CANMOUNT} "${NAME}"
+	  fi
           while __be_clone "${NAME}"
           do
             zfs promote "${NAME}"
@@ -917,28 +928,36 @@ EOF
     # zfs dataset to a specified mountpoint unless mountpoint=legacy.
     if [ "$OSNAME" = "Linux" ]
     then
-      if ! zfs set mountpoint="${TARGET}"  canmount=noauto "${POOL}/${BEDS}/${2}"
+      if ! zfs set mountpoint="${TARGET}" "${POOL}/${BEDS}/${2}" 
       then
-        echo "ERROR: Could not set mountpoint=legacy canmount=noauto for dataset ${POOL}/${BEDS}/${2}."
+        echo "ERROR: Could not set mountpoint=${TARGET} for dataset ${POOL}/${BEDS}/${2}."
         exit 1
       fi
-      if ! zfs mount "${POOL}/${BEDS}/${2}"
+      if [ $(zfs list -H -o canmount "${POOL}/${BEDS}/${2}") != "off" ]
       then
-        echo "ERROR: Could mount dataset ${POOL}/${BEDS}/${2} to ${TARGET}."
-        exit 1
+	if ! zfs set canmount=noauto "${POOL}/${BEDS}/${2}" 
+	then
+	  echo "ERROR: Could not set canmount=noauto for dataset ${POOL}/${BEDS}/${2}."
+	  exit 1
+	fi
+	if ! zfs mount "${POOL}/${BEDS}/${2}"
+	then
+	  echo "ERROR: Could mount dataset ${POOL}/${BEDS}/${2} to ${TARGET}."
+	  exit 1
+	fi
       fi
     else
-      if ! mount -t zfs "${POOL}/${BEDS}/${2}" "${TARGET}"
+      if ! zfs mount "${POOL}/${BEDS}/${2}" 
       then
         echo "ERROR: Cannot mount '${2}' at '${TARGET}' mountpoint"
         exit 1
       fi
     fi
-    zfs list -H -o name,mountpoint -r "${POOL}/${BEDS}/${2}" \
-      | grep -v -E "[[:space:]](legacy|none)$" \
+    zfs list -H -o name,mountpoint,canmount -r "${POOL}/${BEDS}/${2}" \
+      | grep -v -E "[[:space:]](legacy|none|off)$" \
       | sort -n \
       | grep -E "^${POOL}/${BEDS}/${2}/" \
-      | while read FS MOUNTPOINT
+      | while read FS MOUNTPOINT CANMOUNT
         do
           if [ "${FS}" != "${POOL}/${BEDS}/${2}" ]
           then
@@ -960,7 +979,7 @@ EOF
             echo "ERROR: Cannot create '${TARGET}${MOUNTPOINT}' mountpoint"
             exit 1
           fi
-          if ! mount -t zfs "${FS}" "${TARGET}${MOUNTPOINT}" 1> /dev/null 2> /dev/null
+          if ! zfs mount "${FS}" 1> /dev/null 2> /dev/null
           then
             echo "ERROR: Cannot mount '${FS}' at '${TARGET}${MOUNTPOINT}' mountpoint"
             exit 1
@@ -1050,7 +1069,7 @@ EOF
 EOF
       ionice -c3 -p $$ | sed 's/^/    /'
       renice -n 20 -p $$ | sed 's/^/    /'
-      /usr/bin/chroot "${MNT}" "${SHELL:-/bin/bash}" --rcfile "${TMPRC}"
+      chroot "${MNT}" "${SHELL:-/bin/bash}" --rcfile "${TMPRC}"
       rm "${TMPRC}"
     elif ! [ -e "${MNT}/proc/self" ]
       then
@@ -1148,10 +1167,18 @@ EOF
     # and reset the root mountpoint back to /
     if [ "$OSNAME" = "Linux" ]
     then
-      if ! zfs set mountpoint=/ canmount=noauto "${POOL}/${BEDS}/${2}"
+      if [ $(zfs list -H -o canmount "${POOL}/${BEDS}/${2}" ) != "off" ]
       then
-        echo "ERROR: Could not set mountpoint=/ canmount=noauto for dataset ${POOL}/${BEDS}/${2}."
-        exit 1
+	if ! zfs set canmount=noauto "${POOL}/${BEDS}/${2}" 
+	then
+	  echo "ERROR: Could not set canmount=noauto for dataset ${POOL}/${BEDS}/${2}."
+	  exit 1
+	fi
+      fi
+      if ! zfs set mountpoint=/ "${POOL}/${BEDS}/${2}"
+      then
+	echo "ERROR: Could not set mountpoint=/ for dataset ${POOL}/${BEDS}/${2}."
+	exit 1
       fi
     fi
     echo "Unmounted successfully"
