@@ -30,7 +30,7 @@ set -e
 unset LC_ALL
 unset LANG
 PATH=${PATH}:/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin
-shell=/bin/bash
+shell=$0
 
 # Detect root
 if false && [ $(id -u) -ne 0 ]
